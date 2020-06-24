@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybaits.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="productDAO">
+
+
+	<insert id="insertProduct" parameterType="productVO">
+		INSERT INTO PRODUCT VALUES (PRODUCT_SEQ.nextval, #{productName}, #{productText}, 
+									#{productPrice}, #{productThumb}, #{productImage},
+									#{productDisplay} , #{stock} , #{categoryNum} , SYSDATE , 
+									#{id} , #{productMeterial} , #{manufacturer} , #{mfDate} , 
+									#{origin} , #{deliveryPrice} ,
+									#{optionOneName} , #{optionTwoName} , #{optionThreeName}, #{productSale})
+	</insert>
+	
+	<insert id="insertProductDateIsNull" parameterType="productVO">
+		INSERT INTO PRODUCT ("productNum" , "productName" , "productText" , "productPrice" ,
+							 "productThumb" , "productImage" , "productDisplay" , "stock" , 
+							 "categoryNum" , "productDate" , "id" , "productMeterial" , 
+							 "manufacturer" , "origin" , "deliveryPrice" ,"optionOneName" , "optionTwoName" , "optionThreeName", "productSale") 
+					VALUES 
+                       (PRODUCT_SEQ.nextval, #{productName}, #{productText}, #{productPrice}, 
+                       						#{productThumb}, #{productImage}, #{productDisplay} ,
+                       						 #{stock} , #{categoryNum} , SYSDATE , #{id} , 
+                       						 #{productMeterial} , #{manufacturer} , #{origin} , #{deliveryPrice} ,
+											#{optionOneName} , #{optionTwoName} , #{optionThreeName}, #{productSale})
+	</insert>
+	
+	<insert id="insertOption" parameterType="optionVO">
+		INSERT INTO OPTIONN VALUES (OPTION_SEQ.NEXTVAL, #{productNum}, #{stock}, #{optionOneNum}, #{optionTwoNum}, #{optionThreeNum})
+	</insert>
+	
+	<insert id="insertOptionDetailIsNull" parameterType="optionVO">
+		INSERT INTO OPTIONN ("optionNum" , "productNum" , "cnt" , "optionOneNum") VALUES (OPTION_SEQ.NEXTVAL, #{productNum}, #{cnt}, #{optionOneNum})
+	</insert>
+	
+	<insert id="insertDetailOption" parameterType="detailOptionVO">
+		INSERT INTO DETAILOPTION VALUES (DETAILOPTION_SEQ.NEXTVAL, #{optionName}, #{optionLevel}, #{productNum})
+	</insert>
+
+	<select id="selectProductByProductNum" resultType="productVO">
+		SELECT * FROM
+		PRODUCT WHERE "productNum" = #{productNum}
+	</select>
+	
+	<select id="selectOptionNum" resultType="int">
+		SELECT "optionNum" FROM OPTIONN WHERE "productNum" = #{productNum} and "optionOneNum" = #{optionOneNum} and "optionTwoNum" = #{optionTwoNum} and "optionThreeNum" = #{optionThreeNum}
+	</select>
+	
+	<!-- optionNumList -->
+	<select id="selectOptionByOptionNumList" parameterType="hashmap" resultType="optionVO">
+	 	SELECT * FROM OPTIONN 
+	 	<foreach collection="array" item="optionNum" open="WHERE" separator="OR">
+			"optionNum" = #{optionNum}
+		</foreach>
+	</select>
+	
+	<select id="selectProducts" parameterType="hashmap" resultType="productVO">
+		SELECT * FROM PRODUCT
+		<foreach collection="array" item="productNum" open="WHERE" separator="OR">
+			"productNum" = #{productNum}
+		</foreach>
+	</select>
+	
+	
+	
+	<select id="selectDetailOptionByProductNum" resultType="detailOptionVO">
+		SELECT * FROM DETAILOPTION WHERE "productNum" = #{productNum}
+	</select>
+	
+	<select id="selectOptionLevelMaxByProductNum" resultType="int">
+		SELECT MAX("optionLevel") FROM DETAILOPTION WHERE "productNum" = #{productNum}
+	</select>
+	
+	<select id="selectProductById" resultType="productVO">
+		SELECT * FROM PRODUCT WHERE "id" = #{id}
+	</select>
+	
+	<select id="selectProductByIdPaging" parameterType="productVO" resultType="productVO">
+		SELECT * FROM (SELECT rownum rnum, "productNum", "productName", "productText", "productPrice", "productThumb", "productImage", "productDisplay", "stock", "categoryNum", "productDate", "id",  
+		"productMeterial", "manufacturer", "mfDate", "origin", "deliveryPrice", "optionOneName", "optionTwoName", "optionThreeName", "productSale" FROM PRODUCT WHERE "id" = #{id}) WHERE rnum &gt;= #{startNum} AND rnum &lt;= #{endNum}
+		
+		
+	</select>
+	
+	<select id="selectOptionByOptionNum" resultType="optionVO">
+		SELECT * FROM OPTIONN WHERE "optionNum" = #{optionNum}
+	</select>
+	
+
+	<select id="selectOptionByProductNum" resultType="optionVO">
+		SELECT * FROM
+		OPTIONN WHERE "productNum" = #{productNum}
+	</select>
+
+	<insert id="insertBasket" parameterType="basketVO">
+		MERGE INTO BASKET b
+		USING DUAL
+		ON (b."optionNum" = #{optionNum})
+		WHEN MATCHED THEN
+		UPDATE SET "cnt" = "cnt"+ #{cnt}
+		
+		WHEN NOT MATCHED THEN
+		INSERT ("basketNum","id","optionNum","cnt")
+		VALUES(BASKET_SEQ.nextval, #{id} ,#{optionNum},#{cnt})
+	</insert>
+
+
+	<select id="selectBasketByOptionNum" parameterType="hashmap" resultType="basketListVO">
+		select * from (select b."basketNum", p."productPrice",p."deliveryPrice" , m."id", p."productName",p."productThumb",
+		o."productNum",b."cnt" ,o."stock",b."optionNum", s."storeName" from OPTIONN o, PRODUCT p, BASKET b, MEMBER m, SELLER s
+		where p."productNum" = o."productNum" and b."optionNum" = o."optionNum" and m."id" = b."id" and p."id" = s."id")
+		<foreach collection="array" item="basketNum" open="WHERE" separator="OR">
+			"basketNum" = #{basketNum}
+		</foreach>
+	</select>
+	
+
+	
+	
+	
+	<select id="selectBasketList" resultType="basketListVO">
+		SELECT b."basketNum", p."productName",
+		p."productThumb", b."optionNum", p."productPrice",p."deliveryPrice"
+		,p."productName", s."storeName",
+		m."id", o."productNum",o."stock",b."cnt" from OPTIONN
+		o, PRODUCT p, BASKET b, MEMBER m, SELLER s
+		where p."productNum" = o."productNum" and p."id" = s."id"
+		and b."optionNum" = o."optionNum" and b."id" = m."id"
+		and m."id" = #{id}
+	</select>
+
+	<update id="updateCnt" parameterType="basketVO">
+		UPDATE BASKET set "cnt" = #{cnt} where "id" = #{id} and "optionNum"=#{optionNum}
+	</update>
+	
+	<delete id="deleteBasketByBasketNum" parameterType="basketVO">
+		DELETE FROM BASKET where "basketNum" = #{basketNum}
+	</delete>
+
+
+
+
+	
+		 <select id="getProductListTotal"  resultType="productVO">
+		SELECT "productNum", "productName", "productThumb", "productPrice","deliveryPrice" ,"id", "productSale" FROM PRODUCT WHERE "productDisplay" like 'TRUE' AND "productSale" like 'YES' AND "productName" like '%'||#{keyword}||'%'	
+	
+			<if test="searchType=='productNum' and keyword2 != null and keyword2 != '' ">
+				AND "productNum" like '%'||#{keyword2}||'%'
+			</if>
+			<if test="searchType=='productName' and keyword2 != null and keyword2 != '' ">
+				AND "productName" like '%'||#{keyword2}||'%'	
+			</if>
+			<if test="searchType=='id' and keyword2 != null and keyword2 != '' ">
+				AND "id" like '%'||#{keyword2}||'%'
+			</if>						
+			<if test="minPrice != null and minPrice != '' and maxPrice != null and maxPrice != '' ">
+				AND "productPrice" BETWEEN #{minPrice} AND #{maxPrice}
+			</if>
+			<if test="checkDelivery=='on' ">
+				AND "deliveryPrice" = 0
+			</if>
+			<if test="categoryNum != null">
+				AND "categoryNum" = #{categoryNum}
+			</if>
+			<if test="sortType == 'highPrice' ">
+				order by "productPrice" desc
+			</if>
+			<if test="sortType == 'lowPrice' ">
+				order by "productPrice" asc
+			</if>	
+			<if test="sortType == 'productDate' ">
+				order by "productDate" desc
+			</if>
+			
+					
+	</select>
+	
+	
+	<select id="getProductList"  resultType="productVO">
+		SELECT * FROM (SELECT rownum rnum, "productNum", "productName", "productThumb", "productPrice","deliveryPrice" ,"id", "categoryNum", "productDate", "productSale" FROM PRODUCT WHERE "productDisplay" like 'TRUE' AND "productSale" like 'YES' AND "productName" like '%'||#{keyword}||'%'	
+	
+			<if test="searchType=='productNum' and keyword2 != null and keyword2 != '' ">
+				AND "productNum" like '%'||#{keyword2}||'%'
+			</if>
+			<if test="searchType=='productName' and keyword2 != null and keyword2 != '' ">
+				AND "productName" like '%'||#{keyword2}||'%'	
+			</if>
+			<if test="searchType=='id' and keyword2 != null and keyword2 != '' ">
+				AND "id" like '%'||#{keyword2}||'%'
+			</if>						
+			<if test="minPrice != null and minPrice != '' and maxPrice != null and maxPrice != '' ">
+				AND "productPrice" BETWEEN #{minPrice} AND #{maxPrice}
+			</if>
+			<if test="checkDelivery=='on' ">
+				AND "deliveryPrice" = 0
+			</if>
+			<if test="categoryNum != null">
+				AND "categoryNum" = #{categoryNum}
+			</if>
+			<if test="sortType == 'highPrice' ">
+				order by "productPrice" desc
+			</if>
+			<if test="sortType == 'lowPrice' ">
+				order by "productPrice" asc
+			</if>	
+			<if test="sortType == 'productDate' ">
+				order by "productDate" desc
+			</if>
+			) WHERE rnum &gt;= #{startNum} AND rnum &lt;= #{endNum}
+					
+	</select>
+	
+	<update id="updateProductByProductNum" parameterType="productVO">
+      UPDATE PRODUCT SET 
+	      "productName" = #{productName} ,   "productText" = #{productText} , "productPrice" = #{productPrice} , 
+	      "productThumb" = #{productThumb} , "productImage" = #{productImage} ,"productDisplay" = #{productDisplay} ,
+	      "stock" = #{stock} , "categoryNum" = #{categoryNum} ,"productMeterial" = #{productMeterial} , 
+	      "manufacturer" = #{manufacturer}  , "mfDate" = #{mfDate} , "origin" = #{origin} , 
+		  "deliveryPrice" = #{deliveryPrice}
+	  WHERE "productNum" = #{productNum}
+   </update>
+   
+   <update id="updateProductByProductNumDateIsNull" parameterType="productVO">
+      UPDATE PRODUCT SET 
+	      "productName" = #{productName} ,   "productText" = #{productText} , "productPrice" = #{productPrice} , 
+	      "productThumb" = #{productThumb} , "productImage" = #{productImage} ,"productDisplay" = #{productDisplay} ,
+	      "stock" = #{stock} , "categoryNum" = #{categoryNum} ,"productMeterial" = #{productMeterial} , 
+	      "manufacturer" = #{manufacturer}  , "origin" = #{origin} , 
+		  "deliveryPrice" = #{deliveryPrice}
+	  WHERE "productNum" = #{productNum}
+   </update>
+   
+<!--    <delete id="deleteProductByProductNum" parameterType="productVO">
+   		DELETE FROM PRODUCT WHERE "productNum" = #{productNum}
+   </delete> -->
+   
+   <update id="deleteProductByProductNum" parameterType="productVO">
+   	UPDATE PRODUCT SET "productSale" = #{productSale} WHERE "productNum" = #{productNum}
+   </update>
+   
+   <delete id="deleteDetailOption" parameterType="int">
+   		DELETE FROM DETAILOPTION WHERE "doNum" = #{doNum}
+   </delete>
+   
+ 	<select id="selectMaxDoNumByProductNum" parameterType="int" resultType="int">
+ 		SELECT MAX("doNum") FROM DETAILOPTION WHERE "productNum" = #{productNum}
+ 	</select>
+ 	
+ 	<select id="selectOptionAll" resultType="optionVO">
+ 		SELECT * FROM OPTIONN
+ 	</select>
+ 	
+ 	<delete id="deleteOptionByDoNum" parameterType="int">
+ 		DELETE FROM OPTIONN WHERE "optionOneNum" = #{doNum} OR "optionTwoNum" = #{doNum} OR "optionThreeNum" = #{doNum}
+ 	</delete>
+ 	
+ 	<delete id="deleteOptionByOptionNum" parameterType="int">
+ 		DELETE FROM OPTIONN WHERE "optionNum" = #{optionNum}
+ 	</delete>
+ 	
+ 	<select id="selectDetailOptionByOptionOneNum" parameterType="optionVO" resultType="detailOptionVO">
+ 		SELECT * FROM DETAILOPTION WHERE "doNum" = #{optionTwoNum} AND "productNum" = #{productNum}
+ 	</select>
+ 	
+ 	<select id="selectDetailOptionByOptionTwoNum" parameterType="optionVO" resultType="detailOptionVO">
+ 		SELECT * FROM DETAILOPTION WHERE "doNum" = #{optionThreeNum} AND "productNum" = #{productNum}
+ 	</select>
+ 	
+ 	<select id="selectOptionByOptionOneNum" parameterType="optionVO" resultType="optionVO">
+ 		SELECT * FROM OPTIONN WHERE "optionOneNum" = #{optionOneNum} ORDER BY "optionTwoNum" ASC
+ 	</select>
+ 	
+ 	<select id="selectOptionByOptionTwoNum" parameterType="optionVO" resultType="optionVO">
+ 		SELECT * FROM OPTIONN WHERE "optionTwoNum" = #{optionTwoNum} AND "optionOneNum" = #{optionOneNum}
+ 	</select>
+ 	
+ 	<!-- <select id="selectOptionByOptionThreeNum" parameterType="optionVO" resultType="optionVO">
+ 		SELECT * FROM OPTIONN WHERE "optionThreeNum" = #{doNum}
+ 	</select> -->
+ 	
+ 	<update id="updateProductDisplayByProductNum" parameterType="productVO">
+      UPDATE PRODUCT SET "productDisplay" = #{productDisplay} WHERE "productNum" = #{productNum}
+    </update>
+   
+   <delete id="deleteSelectProductByProductNum" parameterType="productVO">
+ 		DELETE FROM PRODUCT WHERE "productNum" = #{productNum}
+ 	</delete>
+ 	
+ 	<select id="selectDetailOptionByDoNum" parameterType="int" resultType="detailOptionVO">
+ 		SELECT * FROM DETAILOPTION WHERE "doNum" = #{doNum}
+ 	</select>
+ 	
+ 	<select id="selectProductByCategoryNum" parameterType="int" resultType="productVO">
+ 		SELECT * FROM PRODUCT
+ 		<foreach collection="array" item="categoryNum" open="WHERE" separator="OR">
+			"categoryNum" = #{categoryNum}
+		</foreach>
+ 	</select>
+ 	
+ 	<update id="updateProductByCategoryNumZero" parameterType="int">
+ 		UPDATE PRODUCT SET "categoryNum" = 0 WHERE "productNum" = #{productNum}
+ 	</update>
+
+ 	<select id="selectOrderBySellerId" parameterType="orderProductVO" resultType="orderProductVO">
+ 		SELECT *
+		FROM (SELECT rownum rnum, O."orderNum", O."orderDate", O."state", O."payCase", O."payPrice", O."trackingNum", O."toName", O."toPhone", O."toPost", O."toAddress", O."id", O."deliveryMessage", O."payNum", O."trackingCode", OL."olNum", OL."productName", OL."productThumb", OL."optionOneNum", OL."optionTwoNum", OL."optionThreeNum", OL."productPrice", OL."cnt", OL."optionNum", OP."productNum", PR."productText", PR."productImage", PR."productDisplay", PR."categoryNum", PR."productDate", PR."productMeterial", PR."manufacturer", PR."mfDate", PR."origin", PR."deliveryPrice", PR."optionOneName", PR."optionTwoName", PR."optionThreeName" 
+		FROM ORDERR O, ORDERLIST OL, OPTIONN OP, PRODUCT PR 
+		WHERE PR."id" = #{id} 
+		AND O."orderNum" = OL."orderNum" 
+		AND OL."optionNum" = OP."optionNum" 
+		AND OP."productNum" = PR."productNum"
+		<if test=" state != null and state != '' ">
+			AND O."state" = #{state}
+		</if>	
+		<if test=" search != null and search != '' ">
+			AND OL."productName" like '%'||#{search}||'%'	
+		</if>
+		) WHERE rnum &gt;= #{startNum} AND rnum &lt;= #{endNum}
+ 	</select>
+ 	
+ 	<select id="selectOrderBySellerIdTotal" parameterType="orderProductVO" resultType="orderProductVO">
+ 		SELECT * 
+		FROM ORDERR O, ORDERLIST OL, OPTIONN OP, PRODUCT P 
+		WHERE P."id" = #{id} 
+		AND O."orderNum" = OL."orderNum" 
+		AND OL."optionNum" = OP."optionNum" 
+		AND OP."productNum" = P."productNum"
+		<if test=" state != null and state != '' ">
+			AND O."state" = #{state}
+		</if>	
+		<if test=" search != null and search != '' ">
+			AND OL."productName" like '%'||#{search}||'%'	
+		</if>
+ 	</select>
+ 	
+ 	<select id="selectDeliveryInfoById" parameterType="orderVO" resultType="orderVO">
+ 		SELECT DISTINCT "toName" , "toPhone" , "toPost" , "toAddress" , "trackingNum"
+		FROM ORDERR
+		WHERE "id" = #{id} AND "orderNum" = #{orderNum}
+ 	</select>
+ 	
+ 	<select id="selectLatelyProductNum" parameterType="String" resultType="int">
+ 		SELECT MAX("productNum") FROM PRODUCT WHERE "id" = #{id}
+ 	</select>
+ 	
+ 	<insert id="insertDeclProduct" parameterType="declProductVO">
+		INSERT INTO DECLPRODUCT VALUES(DECLPRODUCT_SEQ.NEXTVAL , #{declReason}, #{declText} , #{productNum} , SYSDATE , #{sellerId} , #{declId})
+	</insert>
+	
+	<select id="selectReviewByProductNum" parameterType="int" resultType="reviewVO">
+		SELECT *
+		FROM REVIEW R, ORDERR O, ORDERLIST OL, OPTIONN OP, PRODUCT P
+		WHERE R."orderNum" = O."orderNum"
+		AND O."orderNum" = OL."orderNum"
+		AND OL."optionNum" = OP."optionNum"
+		AND OP."productNum" = P."productNum"
+		AND P."productNum" = #{productNum}
+	</select>
+ 	
+</mapper>

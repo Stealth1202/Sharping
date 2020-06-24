@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybaits.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="orderDAO">
+	
+	<insert id="insertVirtualAccount" parameterType="virtualAccountVO">
+		INSERT INTO VIRTUALACCOUNT VALUES(#{vaNum},#{payNum},#{bankCode},#{payPrice},#{respCode},sysdate + 7)
+	
+	</insert>
+	
+	<select id="selectOrder" resultType="orderVO">
+		SELECT * FROM ORDERR WHERE "orderNum" = #{orderNum}  
+	</select>
+	
+	<select id="selectOrderSearch" resultType="orderVO" parameterType="orderVO">
+		SELECT * FROM ORDERR O, ORDERLIST OL, OPTIONN OP, PRODUCT P WHERE O."id" = #{id} AND O."orderNum" = OL."orderNum" AND OL."optionNum" = OP."optionNum" AND OP."productNum" = P."productNum"
+		<if test="keywordO != null and keywordO != '' ">
+			AND OL."productName" like '%'||#{keywordO}||'%'
+		</if>  
+		<if test="state != null and state != '' and state != '전체 주문 상태' ">
+			AND O."state" = #{state}
+		</if>
+		<if test="firstDate != null and secondDate != null ">
+			AND O."orderDate" &gt; #{firstDate} AND O."orderDate" &lt; #{secondDate}
+		</if>
+		ORDER BY "orderDate" ASC
+	</select>
+	
+	<select id="selectOrderSort" resultType="orderVO" parameterType="orderVO">
+		SELECT * FROM ORDERR WHERE "id" = #{id} AND "state" = #{state} ORDER BY "orderDate" ASC
+	</select>
+	
+	<select id="selectOrderDate" resultType="orderVO" parameterType="orderVO">
+		SELECT * FROM ORDERR WHERE "id" = #{id} AND "orderDate" &gt; #{firstDate} AND "orderDate" &lt; #{secondDate} ORDER BY "orderDate" ASC
+	</select>
+	
+	<select id="selectPayNumCount" resultType="int" parameterType="int">
+		SELECT COUNT(*) FROM ORDERR WHERE "payNum" = #{payNum}
+	</select>
+	
+	<select id="selectOrderById" resultType="orderVO">
+		SELECT * FROM ORDERR WHERE "id" = #{id} ORDER BY "orderDate" ASC
+	</select>
+	
+	<select id="selectOrderListByOrderNum" resultType="orderListVO">
+		SELECT * FROM ORDERLIST WHERE "orderNum" = #{orderNum}
+	</select>
+	
+	<select id="selectByVirtualAccount" resultType="payBankVO">
+		SELECT * FROM VIRTUALACCOUNT WHERE "payNum" = #{payNum}
+	</select>
+	
+	<insert id="insertPayBank" parameterType="payBankVO">
+		INSERT INTO PAYBANK VALUES(#{payNum},'','',#{bankCode},#{vaNum})
+		
+	</insert>
+	
+	<select id="selectPayBank" resultType="payBankVO">
+		SELECT * FROM PAYBANK WHERE "payNum" = #{payNum}
+	</select>
+	
+	<update id="updateRespCode" parameterType="payMoneyVO" >
+		UPDATE VIRTUALACCOUNT SET "respCode" = 'YES' WHERE "vaNum" = #{vaNum} and "bankCode" = #{bankCode} and "payPrice" = #{payPrice}
+	</update>
+	
+	<update id="updatepayDate" parameterType="String">
+		UPDATE PAYBANK SET "payDate" = SYSDATE WHERE "vaNum" = #{vaNum}
+	</update>
+	
+	<update id="updateState" parameterType="int">
+		UPDATE ORDERR SET "state" = '결제 완료' WHERE "payNum" = #{payNum}
+	</update>
+	
+	<select id="selectBankCodeList" resultType="bankVO">
+		SELECT * FROM BANK
+	</select>
+	
+	
+	<insert id="insertOrder" parameterType="orderVO">
+		INSERT INTO ORDERR VALUES (ORDER_SEQ.NEXTVAL, SYSDATE, #{state}, #{payCase}, #{payPrice}, #{trackingNum}, #{toName}, #{toPhone}, #{toPost}, #{toAddress}, #{id}, #{deliveryMessage}, #{payNum}, #{trackingCode})
+	</insert>
+
+	<insert id="insertPayCard" parameterType="orderVO">
+		INSERT INTO PAYCARD VALUES (#{payNum}, #{impId})
+	</insert>
+	
+	<select id="selectLatelyOrderNum" resultType="orderVO" parameterType="String">
+		SELECT * FROM ORDERR WHERE "orderNum" = (SELECT MAX("orderNum") FROM ORDERR WHERE "id" = #{id})
+	</select>
+	
+	<select id="selectTonameOrderNum" resultType="orderVO" parameterType="String">
+		SELECT * FROM ORDERR WHERE "orderDate" = (SELECT MAX("orderDate") FROM ORDERR WHERE "toName" = #{toName})
+	</select>
+	
+	<insert id="insertOrderList" parameterType="orderListVO">
+		INSERT INTO ORDERLIST VALUES (ORDERLIST_SEQ.NEXTVAL, #{productName}, #{productThumb}, #{optionOneNum}, #{optionTwoNum}, #{optionThreeNum}, #{productPrice}, #{cnt}, #{orderNum}, #{optionNum})
+	</insert>
+	
+	<update id="decrementStockProduct" parameterType="orderListVO">
+		UPDATE PRODUCT SET "stock" = "stock" - #{cnt} WHERE "productNum" = #{productNum}
+	</update>
+	
+	<update id="decrementStockOption" parameterType="orderListVO">
+		UPDATE OPTIONN SET "stock" = "stock" - #{cnt} WHERE "optionNum" = #{optionNum}
+	</update>
+	
+	<select id="selectProductNumByOptionNum" resultType="int" parameterType="int">
+		SELECT "productNum" FROM OPTIONN WHERE "optionNum" = #{optionNum}
+	</select>
+	
+	<select id="selectOrderListByOlNum" resultType="orderListVO">
+		SELECT * FROM ORDERLIST WHERE "olNum" = #{olNum}
+	</select>
+	
+	<update id="updateOrderByOrderNum" parameterType="int">
+		UPDATE ORDERR SET "state" = '주문 취소' WHERE "orderNum" = #{orderNum}
+	</update>
+	
+	<update id="updatePayPriceVirtualAccount" parameterType="virtualAccountVO">
+		UPDATE VIRTUALACCOUNT SET "payPrice" = #{payPrice} WHERE "vaNum" = #{vaNum} 
+	</update>
+	
+	<select id="selectOrderByPayNum" resultType="orderVO">
+		SELECT * FROM ORDERR WHERE "payNum" = #{payNum} AND "state" NOT LIKE '주문 취소'
+	</select>
+	
+	<insert id="insertGuest" parameterType="guestVO">
+		INSERT INTO GUEST VALUES(#{orderNum},#{guestName},#{guestPhone},#{guestPassword})
+	
+	</insert>
+	
+	<select id="selectOrderByGuest" resultType="guestVO" parameterType="guestVO">
+		SELECT * FROM GUEST WHERE "guestName" = #{guestName} and "guestPhone" = #{guestPhone} and "guestPassword" = #{guestPassword}
+	</select>
+	
+	<select id="selectOrderListByorderNum" parameterType="hashmap" resultType="orderListVO">
+		SELECT * FROM ORDERLIST l, ORDERR o	 where l."orderNum" = o."orderNum" and
+		<foreach collection="array" item="orderNum" index="index" open="(" close=")" separator="OR">
+			l."orderNum" = #{orderNum}
+		</foreach>
+		ORDER BY o."payCase" ASC
+	</select>
+	
+	<select id="selectVirtualAccountVO" parameterType="hashmap" resultType="virtualAccountVO">
+		SELECT * FROM VIRTUALACCOUNT 
+		<foreach collection="array" item="payNum" open="WHERE" separator="OR">
+			"payNum" = #{payNum}
+		</foreach>
+		
+	</select>
+	
+	<select id="selectOrderByorderNums" parameterType="hashmap" resultType="OrderVO">
+			SELECT * FROM ORDERR 
+		<foreach collection="array" item="orderNum" open="WHERE" separator="OR">
+			"orderNum" = #{orderNum}
+		</foreach>
+		ORDER BY "payCase" ASC
+	</select>
+	<select id="selectPayCardByPayNum" parameterType="Integer" resultType="Integer">
+		SELECT * FROM ORDERR WHERE "payCase" = '카드' and
+		<foreach collection="array" item="payNum" open="(" close=")" separator="or">
+			"payNum" = #{payNum}
+		</foreach>
+	</select>
+	<select id="selectPayBankByPayNum" parameterType="Integer" resultType="Integer">
+		SELECT * FROM ORDERR WHERE "payCase" = '무통장 입금' and
+		<foreach collection="array" item="payNum" open="(" close=")" separator="or">
+			"payNum" = #{payNum}
+		</foreach>
+	</select>
+	<select id="selectBankName" parameterType="int" resultType="bankVO">
+		SELECT * FROM BANK WHERE "bankCode" = #{bankCode}
+	</select>
+	
+	<delete id="deleteVirtualAccount" parameterType="String">
+		DELETE FROM VIRTUALACCOUNT WHERE "vaNum" = #{vaNum}
+	</delete>
+	
+	<update id="updateOrderState" parameterType="orderVO">
+		UPDATE ORDERR SET "state" = #{state}, "trackingCode" = #{trackingCode}, "trackingNum" = #{trackingNum} WHERE "orderNum" = #{orderNum}
+	</update>
+	
+	<select id="selectBuyCount" resultType="orderListVO">
+		SELECT * FROM ORDERR O, ORDERLIST OL, OPTIONN OP WHERE O."orderNum" = OL."orderNum" AND OL."optionNum" = OP."optionNum" AND 
+		<foreach collection="array" item="optionNum" open="(" close=")" separator="OR">
+			OL."optionNum" = #{optionNum}
+		</foreach>
+	</select>
+	
+	<select id="selectOrderAll" resultType="orderVO">
+		SELECT * FROM ORDERR
+	</select> 
+
+	<select id="selectAllVirtualAccountVO" parameterType="int" resultType="virtualAccountVO">
+		SELECT * FROM VIRTUALACCOUNT WHERE "payNum" = #{payNum}
+	</select>
+	
+	<select id="selectOrderAllState" parameterType="string" resultType="orderVO">
+		SELECT * FROM ORDERR WHERE "state" = #{state} 
+	</select> 
+	
+	<update id="updateOrderStateTwo" parameterType="orderVO">
+		UPDATE ORDERR SET "state" = #{state} WHERE "orderNum" = #{orderNum}
+	</update>
+
+</mapper>

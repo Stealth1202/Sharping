@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/mvc
+	http://www.springframework.org/schema/mvc/spring-mvc-4.1.xsd"
+	>
+
+	<mvc:interceptors>
+
+		<mvc:interceptor>
+
+			<mvc:mapping path="/infoChange/**" />
+			<mvc:mapping path="/infoChangeMember/**" />
+			<mvc:mapping path="/infoChangeSeller/**" />
+			<mvc:mapping path="/uploadProduct/**" />
+			<mvc:mapping path="/myPage/**" />
+			<mvc:mapping path="/sellerPage/**" />
+			<mvc:mapping path="/uploadProduct/**" />
+			<mvc:mapping path="/productManage/**" />
+			<mvc:mapping path="/orderManage/**" />
+			<mvc:mapping path="/basket/**" />
+			<mvc:mapping path="/deliveryAddress/**" />
+			<mvc:mapping path="/deliveryAddressUpload/**" />
+			<mvc:mapping path="/deliveryAddressUpdate/**" />
+			<mvc:mapping path="/wishList/**" />
+
+			<bean class="interceptor.AuthCheckInterceptor" />
+
+		</mvc:interceptor>
+
+		<mvc:interceptor>
+
+			<mvc:mapping path="/admin/**" />
+
+			<bean class="interceptor.AdminInterceptor" />
+
+		</mvc:interceptor>
+		
+
+	</mvc:interceptors>
+
+
+
+	<bean id="memberController" class="controller.MemberController">
+		<property name="memberService" ref="memberServiceImpl" />
+		<property ref="adminServiceImpl" name="adminService" />
+		<property name="orderService" ref="orderServiceImpl"/>
+		<property name="productService" ref="productServiceImpl"/>
+	</bean>
+
+	<bean id="productController" class="controller.ProductController">
+		<property name="productService" ref="productServiceImpl" />
+		<property name="memberService" ref="memberServiceImpl" />
+		<property ref="adminServiceImpl" name="adminService" />
+		<property name="orderService" ref="orderServiceImpl"/>
+	</bean>
+
+	<bean id="orderController" class="controller.OrderController">
+		<property name="orderService" ref="orderServiceImpl"></property>
+		<property name="productService" ref="productServiceImpl"></property>
+		<property name="memberService" ref="memberServiceImpl"></property>
+		
+	</bean>
+
+	<bean id="adminController" class="controller.AdminController">
+		<property name="adminService" ref="adminServiceImpl" />
+		<property name="memberService" ref="memberServiceImpl" />
+		<property name="productService" ref="productServiceImpl"></property>
+	</bean>
+	
+	<bean id="csController" class="controller.CsController">
+		<property name="memberService" ref="memberServiceImpl" />
+		<property ref="adminServiceImpl" name="adminService" />
+		<property name="orderService" ref="orderServiceImpl"/>
+		<property name="productService" ref="productServiceImpl"/>
+	</bean>
+
+</beans>
